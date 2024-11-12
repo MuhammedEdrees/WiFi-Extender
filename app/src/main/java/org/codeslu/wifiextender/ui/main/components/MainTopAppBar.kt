@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -34,7 +33,8 @@ import org.codeslu.wifiextender.ui.theme.WiFiExtenderTheme
 @Composable
 fun MainTopAppBar(
     modifier: Modifier = Modifier,
-    onConnect: () -> Unit,
+    isConnected: Boolean = false,
+    onToggleConnect: () -> Unit,
     onMoreClicked: () -> Unit = {}
 ) {
     Row(
@@ -60,11 +60,11 @@ fun MainTopAppBar(
         )
         TextButton(
             contentPadding = PaddingValues(0.dp),
-            onClick = { onConnect() },
+            onClick = { onToggleConnect() },
             modifier = Modifier.sizeIn(minWidth = 0.dp, minHeight = 0.dp)
         ) {
             Text(
-                text = stringResource(id = R.string.connect),
+                text = stringResource(id = if(isConnected) R.string.disconnect else R.string.connect),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.W700,
             )
@@ -97,7 +97,7 @@ private fun MainTopBarPreview() {
         ){
             MainTopAppBar(
                 modifier = Modifier,
-                onConnect = {}
+                onToggleConnect = {}
             )
         }
     }

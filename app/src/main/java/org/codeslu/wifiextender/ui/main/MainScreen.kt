@@ -1,5 +1,7 @@
 package org.codeslu.wifiextender.ui.main
 
+import android.content.res.Configuration
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,17 +10,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.codeslu.wifiextender.R
+import org.codeslu.wifiextender.data.model.ConnectedDevice
+import org.codeslu.wifiextender.ui.main.components.ConnectedDevicesSection
 import org.codeslu.wifiextender.ui.main.components.ConnectionInstructionsSection
 import org.codeslu.wifiextender.ui.main.components.EditableTextSection
 import org.codeslu.wifiextender.ui.main.components.ExpandableSection
 import org.codeslu.wifiextender.ui.main.components.HotspotActionsSection
-import org.codeslu.wifiextender.ui.main.components.MainBottomBar
 import org.codeslu.wifiextender.ui.main.components.MainTopAppBar
 import org.codeslu.wifiextender.ui.theme.WiFiExtenderTheme
 
@@ -35,17 +39,18 @@ private fun MainScreenContent(
     isHotspotStarted: Boolean = false,
     isWPSOn: Boolean = false,
     isKeepScreenOn: Boolean = false,
+    connectedDevices: List<ConnectedDevice> = emptyList(),
     hotspotName: String = "",
     hotspotPassword: String = "",
     onAction: (MainUiAction) -> Unit = { }
 ) {
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
             MainTopAppBar(
                 modifier = Modifier.fillMaxWidth(),
-                onConnect = {
+                isConnected = isConnected,
+                onToggleConnect = {
                     onAction(MainUiAction.OnConnect)
                 }
             )
@@ -78,8 +83,8 @@ private fun MainScreenContent(
             )
             HotspotActionsSection(
                 isHotspotStarted = isHotspotStarted,
-                onHotspotButtonClicked = {
-                    onAction(MainUiAction.OnSwitchHotspot)
+                onToggleHotspot = {
+                    onAction(MainUiAction.OnToggleHotspot)
                 },
                 onConfigureHotspotsClicked = {
                     onAction(MainUiAction.OnConfigureHotspots)
@@ -96,20 +101,29 @@ private fun MainScreenContent(
             ExpandableSection(title = stringResource(R.string.connection_instructions)) {
                 ConnectionInstructionsSection()
             }
-            ExpandableSection(title = stringResource(R.string.connected_devices)) {
-                //Connected Devices
+            Crossfade(isHotspotStarted, label = "connected devices"){ state ->
+                if (state) {
+                    ExpandableSection(title = stringResource(R.string.connected_devices)) {
+                        ConnectedDevicesSection(
+                            devices = connectedDevices
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 
-@Preview(showSystemUi = true, showBackground = true)
+@Preview(showSystemUi = true, showBackground = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_UNDEFINED
+)
 @Composable
 private fun MainScreenContentPreview() {
     WiFiExtenderTheme {
         MainScreenContent(
             isHotspotStarted = true,
+            connectedDevices = listOf(ConnectedDevice(name = "Test Device", ip="192.168.1.1"))
         )
     }
 }

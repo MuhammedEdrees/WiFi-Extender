@@ -2,7 +2,7 @@ package org.codeslu.wifiextender.ui.main
 
 sealed interface MainUiAction {
     data object OnConnect: MainUiAction
-    data object OnSwitchHotspot: MainUiAction
+    data object OnToggleHotspot: MainUiAction
     data object OnSwitchWPS: MainUiAction
     data object OnSwitchKeepScreenOn: MainUiAction
     data object OnConfigureHotspots: MainUiAction

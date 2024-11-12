@@ -19,6 +19,7 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = Pink80,
     background = BlueBlack,
     onBackground = WhitePurple,
+    onSurface = Color.White,
     onSurfaceVariant = Gray,
     outline = DarkGray,
     error = Red

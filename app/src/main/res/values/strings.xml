@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Wi-Fi Extender</string>
     <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
     <string name="wps">WPS</string>
     <string name="start_wifi_hotspot">Start Wi-Fi Hotspot</string>
     <string name="stop_wifi_hotspot">Stop Wi-Fi Hotspot</string>

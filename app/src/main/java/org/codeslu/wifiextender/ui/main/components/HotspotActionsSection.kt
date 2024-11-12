@@ -27,7 +27,7 @@ import org.codeslu.wifiextender.ui.theme.WiFiExtenderTheme
 fun HotspotActionsSection(
     modifier: Modifier = Modifier,
     isHotspotStarted: Boolean,
-    onHotspotButtonClicked: () -> Unit,
+    onToggleHotspot: () -> Unit,
     onConfigureHotspotsClicked: () -> Unit = {},
     isWPSOn: Boolean,
     onWPSSwitched: () -> Unit = {},
@@ -47,7 +47,7 @@ fun HotspotActionsSection(
             Button(
                 modifier = Modifier
                     .height(40.dp),
-                onClick = { onHotspotButtonClicked() }
+                onClick = { onToggleHotspot() }
             ) {
                 Text(
                     text = stringResource(id = if (isHotspotStarted) R.string.stop_wifi_hotspot else R.string.start_wifi_hotspot),
@@ -99,7 +99,7 @@ private fun HotspotActionsSectionPreview() {
         HotspotActionsSection(
             modifier = Modifier.padding(horizontal = 16.dp),
             isHotspotStarted = true,
-            onHotspotButtonClicked = {},
+            onToggleHotspot = {},
             isWPSOn = true,
             onWPSSwitched = {},
             isKeepScreenOn = true,
