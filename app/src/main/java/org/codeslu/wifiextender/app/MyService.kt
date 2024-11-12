@@ -6,7 +6,7 @@ import android.content.Intent
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import org.codeslu.wifiextender.R
-import org.codeslu.wifiextender.ui.main.MainActivity
+import org.codeslu.wifiextender.ui.MainActivity
 
 class MyService : Service() {
 
