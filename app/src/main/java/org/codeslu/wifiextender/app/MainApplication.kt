@@ -4,19 +4,27 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.net.wifi.p2p.WifiP2pGroup
 import android.os.Build
+import org.codeslu.wifiextender.app.hotspot.HotSpot
+import org.codeslu.wifiextender.app.hotspot.HotSpotListener
+import kotlin.properties.Delegates
 
 class MainApplication: Application() {
-    override fun onCreate() {
-        super.onCreate()
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "wifi-extender",
-                "Wi-Fi Extender",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
-        }
+    private var listner: HotSpotListener? = null
+    var hotspot by Delegates.observable<HotSpot?>(null) { _, _, new ->
+        listner?.onNewHotSpot(new)
+    }
+
+    var peerList by Delegates.observable<WifiP2pGroup?>(null) { _, _, new ->
+        listner?.onNewDeviceList(new)
+    }
+
+    fun setHotSpotListener(newListener: HotSpotListener) {
+        listner = newListener
+    }
+
+    fun removeHotSpotListener() {
+        listner = null
     }
 }
