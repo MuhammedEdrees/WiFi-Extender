@@ -17,6 +17,8 @@
     <string name="android_instructions">1. Launch NetShare app in yht other device.\n2. Tap “CONNECT” in the actionbar.</string>
     <string name="windows_and_mac_instructions">1. Connect the device to Wi-Fi Hotspot.\n2. Open http://192.168.49.1:8181 in the device to setup the connection</string>
     <string name="other_instructions">1. Connect the device to the hotspot.\n2. Set the proxy settings to:</string>
-    <string name="address_and_port">Address: 192.168.49.1\nPort: 8282</string>
+    <string name="address_and_port">Address: 192.168.49.1\nPort: 8181</string>
     <string name="more_help">MORE HELP</string>
+    <string name="wifi_must_be_enabled_for_the_app_to_work">Wifi must be enabled for the app to work</string>
+    <string name="permission_denied_location_is_required_to_discover_devices">Permission denied! Location is required to discover Devices</string>
 </resources>

@@ -52,6 +52,8 @@ android {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.littleproxy)
+    implementation(libs.koin.androidx.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
