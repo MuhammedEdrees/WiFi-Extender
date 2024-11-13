@@ -40,6 +40,8 @@ import org.codeslu.wifiextender.ui.theme.WiFiExtenderTheme
 fun EditableTextSection(
     modifier: Modifier = Modifier,
     isActive: Boolean,
+    hasPrefix: Boolean = false,
+    prefix: String = "",
     title: String,
     value: String,
     onUpdateValue: (String) -> Unit
@@ -74,12 +76,20 @@ fun EditableTextSection(
                         onValueChange = {
                             textValue = it
                         },
+                        prefix = {
+                            if(hasPrefix){
+                                Text(
+                                    text = prefix,
+                                )
+                            }
+                        },
                         keyboardOptions = KeyboardOptions(
                             imeAction = ImeAction.Done,
                             keyboardType = KeyboardType.Text
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
+                                isEditing = false
                                 onUpdateValue(textValue)
                                 keyboardController?.hide()
                             }
@@ -103,7 +113,7 @@ fun EditableTextSection(
                             modifier = Modifier.size(24.dp),
                             contentPadding = PaddingValues(0.dp),
                             onClick = {
-                                textValue = value
+                                textValue = value.substringAfterLast("-")
                                 isEditing = true
                             }
                         ) {
