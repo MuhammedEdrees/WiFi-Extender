@@ -21,4 +21,5 @@
     <string name="more_help">MORE HELP</string>
     <string name="wifi_must_be_enabled_for_the_app_to_work">Wifi must be enabled for the app to work</string>
     <string name="permission_denied_location_is_required_to_discover_devices">Permission denied! Location is required to discover Devices</string>
+    <string name="vpn_permission_denied">Permission Denied! cannot connect to the device.</string>
 </resources>
