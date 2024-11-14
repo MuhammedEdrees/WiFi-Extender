@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.WiFiExtender.Starting" parent="Theme.SplashScreen">
+        <item name="android:windowBackground">@mipmap/ic_launcher_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenAnimationDuration">3000</item>
+    </style>
+</resources>
