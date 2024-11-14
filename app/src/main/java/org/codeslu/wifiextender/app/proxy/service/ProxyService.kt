@@ -10,10 +10,15 @@ import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pManager
+import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.codeslu.wifiextender.R
 import org.codeslu.wifiextender.app.MainActivity
 import org.codeslu.wifiextender.app.MainApplication
@@ -34,13 +39,17 @@ class ProxyService : Service() {
         const val DEFAULT_NAME = "Hotspot"
         const val KEY_PASSWORD = "key_password"
         const val DEFAULT_PASSWORD = "87654321"
-
+        const val BONJOUR_SERVICE_NAME = "WifiExtenderBonjourServiceName"
+        const val BONJOUR_SERVICE_TYPE = "_proxy._tcp"
+        const val PROXY_IP_KEY = "proxy_ip"
+        const val PROXY_PORT_KEY = "proxy_port"
     }
 
     private var enabled: Boolean = false
     private var name: String? = null
     private var password: String? = null
     private lateinit var manager: WifiP2pManager
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
     private val intentFilter = IntentFilter().apply {
         addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
         addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION)
@@ -81,6 +90,7 @@ class ProxyService : Service() {
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
         unregisterReceiver(receiver)
+        coroutineScope.cancel()
         super.onDestroy()
     }
 
@@ -105,7 +115,9 @@ class ProxyService : Service() {
     @SuppressLint("ForegroundServiceType")
     private fun start() {
         startForeground(1, buildNotification())
-        startHotSpot()
+        coroutineScope.launch {
+            startHotSpot()
+        }
     }
 
     @SuppressLint("ForegroundServiceType")
@@ -119,7 +131,8 @@ class ProxyService : Service() {
         }
         val pendingIntent: PendingIntent =
             PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-        val largeIconBitmap = BitmapFactory.decodeResource(this@ProxyService.resources, R.drawable.ic_logo)
+        val largeIconBitmap =
+            BitmapFactory.decodeResource(this@ProxyService.resources, R.drawable.ic_logo)
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Wi-Fi Extender running")
@@ -154,6 +167,38 @@ class ProxyService : Service() {
                                 HotSpot(group.networkName, group.passphrase)
                             Log.w(TAG, "My IP is $ip")
                             runProxy(address = ip)
+                            val txtMap = mapOf(
+                                PROXY_IP_KEY to ip,
+                                PROXY_PORT_KEY to 8181.toString()
+                            )
+
+                            val bonjourServiceInfo = WifiP2pDnsSdServiceInfo.newInstance(
+                                BONJOUR_SERVICE_NAME,
+                                BONJOUR_SERVICE_TYPE,
+                                txtMap
+                            )
+                            manager.addLocalService(
+                                channel,
+                                bonjourServiceInfo,
+                                object : WifiP2pManager.ActionListener {
+                                    override fun onSuccess() {
+                                        Log.d(TAG, "Bonjour service added")
+                                    }
+
+                                    override fun onFailure(reason: Int) {
+                                        Log.e(
+                                            TAG, "addLocalService onFailure: ${
+                                                when (reason) {
+                                                    WifiP2pManager.ERROR -> "ERROR"
+                                                    WifiP2pManager.P2P_UNSUPPORTED -> "P2P_UNSUPPORTED"
+                                                    WifiP2pManager.BUSY -> "BUSY"
+                                                    else -> "UNKNOWN"
+                                                }
+                                            }"
+                                        )
+                                        stopHotspot()
+                                    }
+                                })
                         } else {
                             Log.e(TAG, "Group Owner Address is null. Cannot start proxy.")
                         }
@@ -215,6 +260,24 @@ class ProxyService : Service() {
                     }"
                 )
 
+            }
+        })
+        manager.clearLocalServices(channel, object : WifiP2pManager.ActionListener {
+            override fun onSuccess() {
+                Log.d(TAG, "clearLocalServices onSuccess")
+            }
+
+            override fun onFailure(reason: Int) {
+                Log.e(
+                    TAG, "clearLocalServices onFailure: ${
+                        when (reason) {
+                            WifiP2pManager.ERROR -> "ERROR"
+                            WifiP2pManager.P2P_UNSUPPORTED -> "P2P_UNSUPPORTED"
+                            WifiP2pManager.BUSY -> "BUSY"
+                            else -> "UNKNOWN"
+                        }
+                    }"
+                )
             }
         })
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
