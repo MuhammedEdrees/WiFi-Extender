@@ -15,6 +15,10 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.codeslu.wifiextender.R
 import org.codeslu.wifiextender.app.MainActivity
 import org.codeslu.wifiextender.app.MainApplication
@@ -45,6 +49,7 @@ class ProxyService : Service() {
     private var name: String? = null
     private var password: String? = null
     private lateinit var manager: WifiP2pManager
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
     private val intentFilter = IntentFilter().apply {
         addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
         addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION)
@@ -85,6 +90,7 @@ class ProxyService : Service() {
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
         unregisterReceiver(receiver)
+        coroutineScope.cancel()
         super.onDestroy()
     }
 
@@ -109,7 +115,9 @@ class ProxyService : Service() {
     @SuppressLint("ForegroundServiceType")
     private fun start() {
         startForeground(1, buildNotification())
-        startHotSpot()
+        coroutineScope.launch {
+            startHotSpot()
+        }
     }
 
     @SuppressLint("ForegroundServiceType")

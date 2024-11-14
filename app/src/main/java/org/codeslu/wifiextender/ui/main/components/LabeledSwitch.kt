@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -25,10 +26,13 @@ fun LabeledSwitch(
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Text(
+            modifier = Modifier.weight(1f),
             text = label,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.W400,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            textAlign = TextAlign.End
         )
         Switch(
             checked = isChecked,

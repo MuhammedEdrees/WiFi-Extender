@@ -1,6 +1,7 @@
 package org.codeslu.wifiextender.app.vpn
 
 import android.annotation.SuppressLint
+import android.app.AlertDialog
 import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
@@ -8,14 +9,19 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.net.VpnService
+import android.net.wifi.WpsInfo
+import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
+import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
+import android.provider.Settings
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.codeslu.wifiextender.R
 import org.codeslu.wifiextender.app.MainActivity
@@ -35,12 +41,14 @@ class MyVpnService : VpnService() {
     }
 
     private var isRunning: Boolean = false
+    private var isConnected: Boolean = false
+    private var isDiscoveringServices = false
     private var tunnel: DatagramSocket? = null
     private var vpnInterface: ParcelFileDescriptor? = null
     private var serverIp: String = ""
     private var serverPort: Int = 0
     private lateinit var manager: WifiP2pManager
-
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
     private val intentFilter = IntentFilter().apply {
         addAction(WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION)
         addAction(WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION)
@@ -48,33 +56,50 @@ class MyVpnService : VpnService() {
         addAction(WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION)
     }
 
-    private val receiver =
+    private val wiFiDirectBroadcastReceiver =
         WiFiDirectBroadcastReceiver(object : WiFiDirectBroadcastReceiver.Listener {
 
             @SuppressLint("MissingPermission")
             override fun onReceive(context: Context?, intent: Intent?) {
                 Log.d(TAG, "received intent: ${intent?.action}")
                 when (intent?.action) {
-                    WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION -> {
-
+                    WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION -> {
+                        val state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1)
+                        if (state == WifiP2pManager.WIFI_P2P_STATE_DISABLED) {
+                            Log.d(TAG, "Wi-Fi Direct is disabled")
+                            promptEnableWifiDirect(this@MyVpnService)
+                        } else if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
+                            Log.d(TAG, "Wi-Fi Direct is enabled")
+                        }
                     }
-
                     else -> Unit
                 }
             }
         }
         )
+    fun promptEnableWifiDirect(context: Context) {
+        AlertDialog.Builder(context)
+            .setTitle(getString(R.string.enable_wi_fi_direct))
+            .setMessage(getString(R.string.wi_fi_direct_is_currently_disabled_please_enable_it_in_settings_to_use_this_feature))
+            .setPositiveButton(getString(R.string.go_to_settings)) { _, _ ->
+                context.startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
+            }
+            .setNegativeButton(getString(R.string.cancel), null)
+            .show()
+        stopSelf()
+    }
 
     override fun onCreate() {
         Log.d(TAG, "VPN service created")
         super.onCreate()
-        registerReceiver(receiver, intentFilter)
+        registerReceiver(wiFiDirectBroadcastReceiver, intentFilter)
         manager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
     }
 
     override fun onDestroy() {
         stopVpn()
-        unregisterReceiver(receiver)
+        unregisterReceiver(wiFiDirectBroadcastReceiver)
+        coroutineScope.cancel()
         super.onDestroy()
     }
 
@@ -99,6 +124,8 @@ class MyVpnService : VpnService() {
 
     @SuppressLint("MissingPermission")
     private fun start() {
+        if (isDiscoveringServices) return
+        isDiscoveringServices = true
         val channel = manager.initialize(this, mainLooper, null)
         val request = WifiP2pDnsSdServiceRequest.newInstance(
             ProxyService.BONJOUR_SERVICE_NAME,
@@ -125,16 +152,54 @@ class MyVpnService : VpnService() {
         val dnsSdTxtRecordListener =
             WifiP2pManager.DnsSdTxtRecordListener { p0, p1, p2 ->
                 Log.d(TAG, "DNS record available")
+                if (isConnected) {
+                    return@DnsSdTxtRecordListener
+                }
+                if (serverIp == p1?.get(ProxyService.PROXY_IP_KEY) && serverPort == p1?.get(ProxyService.PROXY_PORT_KEY)?.toInt()) {
+                    return@DnsSdTxtRecordListener
+                }
                 serverIp = p1?.get(ProxyService.PROXY_IP_KEY) ?: ""
                 serverPort = p1?.get(ProxyService.PROXY_PORT_KEY)?.toInt() ?: 0
                 if (serverIp.isNotBlank() && serverPort > 0) {
-                    CoroutineScope(Dispatchers.IO).launch {
-                        try {
-                            startVpn()
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Failed to start VPN", e)
-                            stopSelf()
+                    try {
+                        coroutineScope.launch {
+                            val config = WifiP2pConfig().apply {
+                                deviceAddress = p2.deviceAddress
+                                wps.setup = WpsInfo.PBC
+                            }
+                            manager.connect(
+                                channel,
+                                config,
+                                object : WifiP2pManager.ActionListener {
+                                    override fun onSuccess() {
+                                        Log.d(
+                                            TAG,
+                                            "Connected to the device offering the service"
+                                        )
+                                        isConnected = true
+
+                                        val intent = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+                                            Intent(Settings.Panel.ACTION_WIFI)
+                                        } else {
+                                            Intent(Settings.ACTION_WIFI_SETTINGS)
+                                        }.apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        startActivity(intent)
+                                        coroutineScope.launch {
+                                            startVpn()
+                                        }
+                                    }
+
+                                    override fun onFailure(reason: Int) {
+                                        Log.e(TAG, "Failed to connect to the device: $reason")
+                                        stopSelf()
+                                    }
+                                })
                         }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to start VPN", e)
+                        stopSelf()
                     }
                 } else {
                     Log.d(TAG, "Server IP or port not available")
@@ -148,8 +213,17 @@ class MyVpnService : VpnService() {
                 Log.d(TAG, "Service discovery started")
             }
 
-            override fun onFailure(p0: Int) {
-                Log.d(TAG, "Service discovery failed")
+            override fun onFailure(reason: Int) {
+                Log.d(
+                    TAG, "Service discovery failed: ${
+                        when (reason) {
+                            WifiP2pManager.ERROR -> "ERROR"
+                            WifiP2pManager.P2P_UNSUPPORTED -> "P2P_UNSUPPORTED"
+                            WifiP2pManager.BUSY -> "BUSY"
+                            else -> "UNKNOWN"
+                        }
+                    }"
+                )
                 stopSelf()
             }
 

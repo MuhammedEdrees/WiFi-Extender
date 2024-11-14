@@ -22,4 +22,8 @@
     <string name="wifi_must_be_enabled_for_the_app_to_work">Wifi must be enabled for the app to work</string>
     <string name="permission_denied_location_is_required_to_discover_devices">Permission denied! Location is required to discover Devices</string>
     <string name="vpn_permission_denied">Permission Denied! cannot connect to the device.</string>
+    <string name="enable_wi_fi_direct">Enable Wi-Fi Direct</string>
+    <string name="wi_fi_direct_is_currently_disabled_please_enable_it_in_settings_to_use_this_feature">Wi-Fi Direct is currently disabled. Please enable it in settings to use this feature.</string>
+    <string name="go_to_settings">Go to Settings</string>
+    <string name="cancel">Cancel</string>
 </resources>

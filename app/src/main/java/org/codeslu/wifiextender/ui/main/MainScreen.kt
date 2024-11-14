@@ -151,24 +151,26 @@ private fun MainScreenContent(
                     onAction(MainUiAction.OnSwitchKeepScreenOn)
                 }
             )
-            ExpandableSection(
-                modifier = Modifier.padding(top = 24.dp),
-                title = stringResource(R.string.connection_instructions)
-            ) {
-                ConnectionInstructionsSection()
-            }
             Crossfade(
                 targetState = isHotspotStarted,
                 label = "connected devices"
             ) { state ->
                 if (state) {
-                    ExpandableSection(
-                        modifier = Modifier.padding(top = 24.dp),
-                        title = stringResource(R.string.connected_devices)
-                    ) {
-                        ConnectedDevicesSection(
-                            devices = connectedDevices
-                        )
+                    Column(modifier = Modifier.fillMaxWidth()){
+                        ExpandableSection(
+                            modifier = Modifier.padding(top = 24.dp),
+                            title = stringResource(R.string.connection_instructions)
+                        ) {
+                            ConnectionInstructionsSection()
+                        }
+                        ExpandableSection(
+                            modifier = Modifier.padding(top = 24.dp),
+                            title = stringResource(R.string.connected_devices)
+                        ) {
+                            ConnectedDevicesSection(
+                                devices = connectedDevices
+                            )
+                        }
                     }
                 }
             }
