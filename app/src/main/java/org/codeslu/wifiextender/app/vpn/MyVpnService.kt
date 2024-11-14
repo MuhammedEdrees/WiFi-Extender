@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.net.VpnService
+import android.net.wifi.WifiManager
 import android.net.wifi.WpsInfo
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pManager
@@ -18,6 +19,7 @@ import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -92,8 +94,18 @@ class MyVpnService : VpnService() {
     override fun onCreate() {
         Log.d(TAG, "VPN service created")
         super.onCreate()
+        checkIfWifiEnabled()
         registerReceiver(wiFiDirectBroadcastReceiver, intentFilter)
         manager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
+    }
+
+    private fun checkIfWifiEnabled() {
+        val wifiState = (applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).wifiState
+        if (wifiState == WifiManager.WIFI_STATE_DISABLED) {
+            Toast.makeText(applicationContext, "Wi-Fi is not enabled, please enable Wi-Fi", Toast.LENGTH_SHORT).show()
+            startSettingsIntent()
+            stopSelf()
+        }
     }
 
     override fun onDestroy() {
@@ -120,6 +132,17 @@ class MyVpnService : VpnService() {
         }
 
         return START_STICKY
+    }
+
+    private fun startSettingsIntent(){
+        val intent = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
+            Intent(Settings.Panel.ACTION_WIFI)
+        } else {
+            Intent(Settings.ACTION_WIFI_SETTINGS)
+        }.apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        startActivity(intent)
     }
 
     @SuppressLint("MissingPermission")
@@ -178,14 +201,7 @@ class MyVpnService : VpnService() {
                                         )
                                         isConnected = true
 
-                                        val intent = if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q){
-                                            Intent(Settings.Panel.ACTION_WIFI)
-                                        } else {
-                                            Intent(Settings.ACTION_WIFI_SETTINGS)
-                                        }.apply {
-                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                                        }
-                                        startActivity(intent)
+                                        startSettingsIntent()
                                         coroutineScope.launch {
                                             startVpn()
                                         }
@@ -231,6 +247,7 @@ class MyVpnService : VpnService() {
         )
     }
 
+
     @SuppressLint("ForegroundServiceType")
     private fun startVpn() {
         if (isRunning || serverIp.isBlank() || serverPort <= 0) {
@@ -258,8 +275,6 @@ class MyVpnService : VpnService() {
             (it as MainApplication).isVpnStarted = true
         }
     }
-
-
     private fun createNotification(): Notification {
         Log.d(TAG, "Creating notification")
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
@@ -280,7 +295,6 @@ class MyVpnService : VpnService() {
             .setOngoing(true)
             .build()
     }
-
     private fun stopVpn() {
         if (!isRunning) {
             return
