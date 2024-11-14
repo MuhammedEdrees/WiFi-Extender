@@ -3,7 +3,7 @@
     <style name="Theme.WiFiExtender.Starting" parent="Theme.SplashScreen">
         <item name="postSplashScreenTheme">@style/Theme.WiFiExtender</item>
         <item name="android:windowBackground">@mipmap/ic_launcher_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon" tools:ignore="NewApi">@drawable/ic_logo</item>
+        <item name="android:windowSplashScreenAnimatedIcon" tools:ignore="NewApi">@mipmap/ic_launcher_foreground</item>
         <item name="android:windowSplashScreenAnimationDuration" tools:ignore="NewApi">3000</item>
     </style>
 </resources>

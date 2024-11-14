@@ -26,4 +26,5 @@
     <string name="wi_fi_direct_is_currently_disabled_please_enable_it_in_settings_to_use_this_feature">Wi-Fi Direct is currently disabled. Please enable it in settings to use this feature.</string>
     <string name="go_to_settings">Go to Settings</string>
     <string name="cancel">Cancel</string>
+    <string name="wi_fi_is_not_enabled_please_enable_wi_fi">Wi-Fi is not enabled, please enable Wi-Fi</string>
 </resources>
